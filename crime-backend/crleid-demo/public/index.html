@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CRLEID — Crime Record & Law Enforcement Intelligence System</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d1117; --surface: #161b22; --surface2: #1c2128;
+    --border: #30363d; --text: #e6edf3; --muted: #8b949e;
+    --accent: #388bfd; --danger: #f85149; --success: #3fb950;
+    --warning: #d29922; --critical: #bc8cff;
+    --font: 'Segoe UI', system-ui, sans-serif;
+    --mono: 'Cascadia Code', 'Consolas', monospace;
+  }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  #sidebar { width: 220px; min-width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 0; overflow-y: auto; }
+  .brand { padding: 18px 16px 14px; border-bottom: 1px solid var(--border); }
+  .brand-title { font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: 0.02em; }
+  .brand-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .nav-section { padding: 12px 10px 4px; font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 12px; font-size: 13px; color: var(--muted); cursor: pointer; border-radius: 6px; margin: 1px 6px; transition: all 0.15s; border: none; background: none; width: calc(100% - 12px); text-align: left; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--surface2); color: var(--accent); }
+  .nav-item .icon { font-size: 15px; width: 18px; text-align: center; }
+
+  /* Main */
+  #main { flex: 1; overflow-y: auto; background: var(--bg); }
+  .page { display: none; padding: 28px; max-width: 1100px; }
+  .page.active { display: block; }
+  .page-header { margin-bottom: 22px; }
+  .page-title { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+  .page-sub { font-size: 13px; color: var(--muted); }
+
+  /* Stats */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 22px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .stat-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .stat-val { font-size: 26px; font-weight: 600; }
+  .stat-val.blue { color: var(--accent); }
+  .stat-val.red { color: var(--danger); }
+  .stat-val.green { color: var(--success); }
+  .stat-val.purple { color: var(--critical); }
+
+  /* Cards */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.06em; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+
+  /* Tables */
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 9px 12px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+
+  /* Badges */
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 4px; font-size: 11px; font-weight: 600; letter-spacing: 0.03em; }
+  .b-red { background: #3d1212; color: #f85149; }
+  .b-orange { background: #342800; color: #d29922; }
+  .b-green { background: #0d2614; color: #3fb950; }
+  .b-blue { background: #0d1f3c; color: #388bfd; }
+  .b-purple { background: #21143a; color: #bc8cff; }
+  .b-gray { background: #21262d; color: #8b949e; }
+
+  /* Forms */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  label { font-size: 12px; color: var(--muted); font-weight: 500; }
+  input, select, textarea { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 8px 11px; font-size: 13px; color: var(--text); font-family: var(--font); outline: none; transition: border 0.15s; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select option { background: var(--surface2); }
+
+  /* Buttons */
+  .btn { padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: var(--font); border: 1px solid var(--border); background: var(--surface2); color: var(--text); transition: all 0.15s; }
+  .btn:hover { border-color: var(--muted); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .btn-gap { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+
+  /* Alerts */
+  .alert { padding: 10px 14px; border-radius: 7px; font-size: 13px; margin-bottom: 14px; border: 1px solid; display: none; }
+  .alert.show { display: block; }
+  .alert-success { background: #0d2614; color: #3fb950; border-color: #1e4620; }
+  .alert-error { background: #3d1212; color: #f85149; border-color: #5c1a1a; }
+  .alert-info { background: #0d1f3c; color: #388bfd; border-color: #1a3560; }
+
+  /* SQL box */
+  .sql { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font-family: var(--mono); font-size: 12px; color: #79c0ff; line-height: 1.7; margin-bottom: 14px; overflow-x: auto; white-space: pre; }
+  .sql .kw { color: #ff7b72; }
+  .sql .fn { color: #ffa657; }
+  .sql .cm { color: var(--muted); }
+
+  /* Tabs */
+  .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 16px; gap: 0; }
+  .tab { padding: 9px 18px; font-size: 13px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; background: none; border-top: none; border-left: none; border-right: none; font-family: var(--font); transition: all 0.15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+
+  /* Audit log */
+  .log-entry { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .log-entry:last-child { border-bottom: none; }
+  .log-dot { width: 9px; height: 9px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
+  .log-dot.assigned { background: var(--success); }
+  .log-dot.reassigned { background: var(--warning); }
+  .log-info { flex: 1; }
+  .log-action { font-size: 12px; font-weight: 600; }
+  .log-detail { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+  /* Risk score display */
+  .risk-box { padding: 14px; border-radius: 8px; font-size: 14px; font-weight: 600; text-align: center; margin-top: 10px; }
+  .risk-LOW { background: #0d2614; color: #3fb950; border: 1px solid #1e4620; }
+  .risk-MODERATE { background: #342800; color: #d29922; border: 1px solid #4a3800; }
+  .risk-HIGH { background: #3d1212; color: #f85149; border: 1px solid #5c1a1a; }
+  .risk-CRITICAL { background: #21143a; color: #bc8cff; border: 1px solid #3a2060; }
+
+  /* Rank bar */
+  .rank-bar-wrap { margin-top: 5px; height: 6px; background: var(--surface2); border-radius: 3px; }
+  .rank-bar { height: 6px; border-radius: 3px; background: var(--accent); transition: width 0.5s ease; }
+
+  /* Schema cards */
+  .schema-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .schema-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+  .schema-card-title { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 8px; }
+  .schema-attr { font-size: 11px; color: var(--muted); padding: 2px 0; }
+  .schema-attr .pk { color: var(--warning); font-weight: 600; }
+  .schema-attr .fk { color: var(--critical); }
+
+  /* Loading */
+  .loading { color: var(--muted); font-size: 13px; padding: 20px; text-align: center; }
+
+  @media (max-width: 700px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+    .grid-2, .grid-3, .form-grid { grid-template-columns: 1fr; }
+    .schema-grid { grid-template-columns: 1fr 1fr; }
+    #sidebar { width: 52px; min-width: 52px; }
+    .nav-item span:not(.icon) { display: none; }
+    .brand-sub, .nav-section, .brand-title { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav id="sidebar">
+  <div class="brand">
+    <div class="brand-title">CRLEID</div>
+    <div class="brand-sub">Oracle SQL 21c</div>
+  </div>
+  <div class="nav-section">Main</div>
+  <button class="nav-item active" onclick="showPage('dashboard',this)"><span class="icon">🏠</span><span>Dashboard</span></button>
+  <button class="nav-item" onclick="showPage('crimes',this)"><span class="icon">📋</span><span>Crime & FIR</span></button>
+  <button class="nav-item" onclick="showPage('suspects',this)"><span class="icon">👤</span><span>Suspects</span></button>
+  <button class="nav-item" onclick="showPage('cases',this)"><span class="icon">🗂️</span><span>Case Files</span></button>
+  <div class="nav-section">Oracle Views</div>
+  <button class="nav-item" onclick="showPage('intelligence',this)"><span class="icon">🔍</span><span>Crime Intel View</span></button>
+  <button class="nav-item" onclick="showPage('workload',this)"><span class="icon">👮</span><span>Officer Workload</span></button>
+  <div class="nav-section">PL/SQL</div>
+  <button class="nav-item" onclick="showPage('trigger',this)"><span class="icon">⚡</span><span>Audit Trigger</span></button>
+  <button class="nav-item" onclick="showPage('analytics',this)"><span class="icon">📊</span><span>Analytics</span></button>
+  <div class="nav-section">Reference</div>
+  <button class="nav-item" onclick="showPage('schema',this)"><span class="icon">🗄️</span><span>Schema</span></button>
+</nav>
+
+<main id="main">
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="page-header">
+    <div class="page-title">Dashboard</div>
+    <div class="page-sub">Live overview — all counts pulled from Oracle in real time</div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Recent crimes</div>
+      <div id="dash-crimes"><div class="loading">Loading...</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Officer workload snapshot</div>
+      <div id="dash-officers"><div class="loading">Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CRIME & FIR -->
+<div class="page" id="page-crimes">
+  <div class="page-header">
+    <div class="page-title">Crime & FIR Registry</div>
+    <div class="page-sub">Register crimes and auto-generate FIRs — runs INSERT with FK constraint enforcement</div>
+  </div>
+  <div id="crime-alert" class="alert"></div>
+  <div class="card">
+    <div class="card-title">Register new crime + FIR</div>
+    <div class="form-grid">
+      <div class="form-group"><label>Crime type</label>
+        <select id="f-ctype"><option>Armed Robbery</option><option>Cyber Fraud</option><option>Murder</option><option>Theft</option><option>Assault</option><option>Drug Trafficking</option><option>Kidnapping</option></select>
+      </div>
+      <div class="form-group"><label>Police station</label><select id="f-station"></select></div>
+      <div class="form-group"><label>Location / address</label><input id="f-loc" placeholder="e.g. MG Road, Bengaluru" /></div>
+      <div class="form-group"><label>Severity</label>
+        <select id="f-sev"><option>LOW</option><option>MEDIUM</option><option selected>HIGH</option><option>CRITICAL</option></select>
+      </div>
+      <div class="form-group"><label>Complainant name</label><input id="f-comp" placeholder="Full name" /></div>
+      <div class="form-group"><label>Filing officer</label><select id="f-officer"></select></div>
+    </div>
+    <div class="btn-gap">
+      <button class="btn btn-primary" onclick="registerCrime()">INSERT Crime + FIR</button>
+      <button class="btn btn-danger" onclick="testConstraint()">Test FK Violation (demo)</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">All crimes in database</div>
+    <div class="tbl-wrap"><table id="crime-table"><tr><td class="loading">Loading...</td></tr></table></div>
+  </div>
+</div>
+
+<!-- SUSPECTS -->
+<div class="page" id="page-suspects">
+  <div class="page-header">
+    <div class="page-title">Suspect Management</div>
+    <div class="page-sub">Profiles with live recidivism score from fn_Recidivism_Score()</div>
+  </div>
+  <div class="grid-3">
+    <div class="card">
+      <div class="card-title">Suspect registry</div>
+      <div class="tbl-wrap"><table id="suspect-table"><tr><td class="loading">Loading...</td></tr></table></div>
+    </div>
+    <div class="card">
+      <div class="card-title">fn_Recidivism_Score()</div>
+      <div class="sql"><span class="kw">SELECT</span> <span class="fn">fn_Recidivism_Score</span>(?)
+<span class="kw">FROM</span> DUAL;</div>
+      <div class="form-group" style="margin-bottom:12px"><label>Select suspect</label>
+        <select id="susp-sel" onchange="showRisk()"></select>
+      </div>
+      <div id="risk-display"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Add new suspect (tests UNIQUE constraint on NationalID)</div>
+    <div id="susp-alert" class="alert"></div>
+    <div class="form-grid">
+      <div class="form-group"><label>Full name</label><input id="s-name" placeholder="Name" /></div>
+      <div class="form-group"><label>National ID (must be unique)</label><input id="s-nid" placeholder="UID-XXXX-XXXX-XXXX" /></div>
+      <div class="form-group"><label>Prior convictions</label><input id="s-conv" type="number" value="0" min="0" /></div>
+      <div class="form-group"><label>Address</label><input id="s-addr" placeholder="Address" /></div>
+    </div>
+    <button class="btn btn-primary" onclick="addSuspect()">INSERT Suspect</button>
+  </div>
+</div>
+
+<!-- CASES -->
+<div class="page" id="page-cases">
+  <div class="page-header">
+    <div class="page-title">Case Files</div>
+    <div class="page-sub">View all cases and assign/reassign officers — triggers the audit trigger</div>
+  </div>
+  <div class="card">
+    <div class="card-title">All case files</div>
+    <div class="tbl-wrap"><table id="case-table"><tr><td class="loading">Loading...</td></tr></table></div>
+  </div>
+</div>
+
+<!-- INTELLIGENCE VIEW -->
+<div class="page" id="page-intelligence">
+  <div class="page-header">
+    <div class="page-title">Crime Intelligence View</div>
+    <div class="page-sub">vw_Crime_Intelligence — JOINs across 6 tables with aggregated counts</div>
+  </div>
+  <div class="sql"><span class="cm">-- Oracle VIEW definition</span>
+<span class="kw">SELECT</span> c.CrimeID, c.CrimeType, c.Severity, c.Status,
+       ps.StationName, f.FIRNumber, f.FIRStatus,
+       <span class="fn">COUNT</span>(<span class="kw">DISTINCT</span> cs.SuspectID)  <span class="kw">AS</span> SuspectCount,
+       <span class="fn">COUNT</span>(<span class="kw">DISTINCT</span> v.VictimID)   <span class="kw">AS</span> VictimCount,
+       <span class="fn">COUNT</span>(<span class="kw">DISTINCT</span> w.WitnessID)  <span class="kw">AS</span> WitnessCount
+<span class="kw">FROM</span> Crime c
+<span class="kw">JOIN</span> Police_Station ps  <span class="kw">ON</span> c.StationID = ps.StationID
+<span class="kw">LEFT JOIN</span> FIR f         <span class="kw">ON</span> c.CrimeID  = f.CrimeID
+<span class="kw">LEFT JOIN</span> Crime_Suspect cs <span class="kw">ON</span> c.CrimeID = cs.CrimeID
+<span class="kw">LEFT JOIN</span> Victims v     <span class="kw">ON</span> c.CrimeID  = v.CrimeID
+<span class="kw">LEFT JOIN</span> Witnesses w   <span class="kw">ON</span> c.CrimeID  = w.CrimeID
+<span class="kw">GROUP BY</span> c.CrimeID, c.CrimeType, c.Severity, c.Status,
+         ps.StationName, f.FIRNumber, f.FIRStatus;</div>
+  <div class="card">
+    <div class="tbl-wrap"><table id="intel-table"><tr><td class="loading">Loading...</td></tr></table></div>
+  </div>
+</div>
+
+<!-- OFFICER WORKLOAD -->
+<div class="page" id="page-workload">
+  <div class="page-header">
+    <div class="page-title">Officer Workload View</div>
+    <div class="page-sub">vw_Officer_Workload — active case count per officer</div>
+  </div>
+  <div class="sql"><span class="kw">SELECT</span> o.OfficerID, o.Name, o.Designation, ps.StationName,
+       <span class="fn">COUNT</span>(cf.CaseID) <span class="kw">AS</span> ActiveCases
+<span class="kw">FROM</span> Officers o
+<span class="kw">JOIN</span> Police_Station ps <span class="kw">ON</span> o.StationID = ps.StationID
+<span class="kw">LEFT JOIN</span> CaseFile cf  <span class="kw">ON</span> o.OfficerID = cf.AssignedOfficerID
+                       <span class="kw">AND</span> cf.CaseStatus != <span class="fn">'Closed'</span>
+<span class="kw">GROUP BY</span> o.OfficerID, o.Name, o.Designation, ps.StationName;</div>
+  <div class="card">
+    <div class="tbl-wrap"><table id="workload-table"><tr><td class="loading">Loading...</td></tr></table></div>
+  </div>
+</div>
+
+<!-- TRIGGER / AUDIT -->
+<div class="page" id="page-trigger">
+  <div class="page-header">
+    <div class="page-title">Audit Trigger — trg_Officer_Assignment_Audit</div>
+    <div class="page-sub">AFTER INSERT OR UPDATE on CaseFile automatically logs every officer assignment to Oracle</div>
+  </div>
+  <div class="sql"><span class="kw">CREATE OR REPLACE TRIGGER</span> trg_Officer_Assignment_Audit
+<span class="kw">AFTER INSERT OR UPDATE OF</span> AssignedOfficerID <span class="kw">ON</span> CaseFile
+<span class="kw">FOR EACH ROW</span>
+<span class="kw">BEGIN</span>
+  <span class="kw">INSERT INTO</span> Officer_Assignment_Log
+    (CaseID, OfficerID, AssignedAt, ActionType)
+  <span class="kw">VALUES</span>
+    (:NEW.CaseID, :NEW.AssignedOfficerID, <span class="fn">SYSTIMESTAMP</span>,
+     <span class="kw">CASE WHEN</span> INSERTING <span class="kw">THEN</span> <span class="fn">'ASSIGNED'</span> <span class="kw">ELSE</span> <span class="fn">'REASSIGNED'</span> <span class="kw">END</span>);
+<span class="kw">END</span>;</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Reassign officer to case</div>
+      <div id="assign-alert" class="alert"></div>
+      <div class="form-group" style="margin-bottom:10px"><label>Case</label><select id="a-case"></select></div>
+      <div class="form-group" style="margin-bottom:14px"><label>Officer</label><select id="a-officer2"></select></div>
+      <button class="btn btn-primary" onclick="assignOfficer()">Assign — fires trigger in Oracle</button>
+    </div>
+    <div class="card">
+      <div class="card-title">Officer_Assignment_Log (audit table)</div>
+      <div id="audit-log"><div class="loading">Loading...</div></div>
+      <button class="btn" style="margin-top:12px" onclick="loadAuditLog()">Refresh log</button>
+    </div>
+  </div>
+</div>
+
+<!-- ANALYTICS -->
+<div class="page" id="page-analytics">
+  <div class="page-header">
+    <div class="page-title">Analytical Queries</div>
+    <div class="page-sub">Oracle window functions — RANK(), LISTAGG(), running SUM() — executed live on the database</div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('tab-rank',this)">Station Crime Rank</button>
+    <button class="tab" onclick="showTab('tab-listagg',this)">LISTAGG Suspects</button>
+    <button class="tab" onclick="showTab('tab-running',this)">Running Total</button>
+  </div>
+  <div id="tab-rank">
+    <div class="sql"><span class="kw">SELECT</span> ps.StationName, <span class="fn">COUNT</span>(c.CrimeID) <span class="kw">AS</span> TotalCrimes,
+       <span class="fn">RANK</span>() <span class="kw">OVER</span> (<span class="kw">ORDER BY COUNT</span>(c.CrimeID) <span class="kw">DESC</span>) <span class="kw">AS</span> CrimeRank
+<span class="kw">FROM</span> Crime c <span class="kw">JOIN</span> Police_Station ps <span class="kw">ON</span> c.StationID = ps.StationID
+<span class="kw">GROUP BY</span> ps.StationName <span class="kw">ORDER BY</span> CrimeRank;</div>
+    <div class="card" id="rank-result"><div class="loading">Loading...</div></div>
+  </div>
+  <div id="tab-listagg" style="display:none">
+    <div class="sql"><span class="kw">SELECT</span> c.CrimeID, c.CrimeType,
+       <span class="fn">LISTAGG</span>(s.Name, <span class="fn">', '</span>) <span class="kw">WITHIN GROUP</span> (<span class="kw">ORDER BY</span> s.Name) <span class="kw">AS</span> SuspectNames
+<span class="kw">FROM</span> Crime c <span class="kw">JOIN</span> Crime_Suspect cs <span class="kw">ON</span> c.CrimeID = cs.CrimeID
+<span class="kw">JOIN</span> Suspects s <span class="kw">ON</span> cs.SuspectID = s.SuspectID
+<span class="kw">GROUP BY</span> c.CrimeID, c.CrimeType;</div>
+    <div class="card"><div class="tbl-wrap"><table id="listagg-table"><tr><td class="loading">Loading...</td></tr></table></div></div>
+  </div>
+  <div id="tab-running" style="display:none">
+    <div class="sql"><span class="kw">SELECT</span> ps.District, c.CrimeType,
+       <span class="fn">COUNT</span>(*) <span class="kw">OVER</span> (<span class="kw">PARTITION BY</span> ps.District <span class="kw">ORDER BY</span> c.CrimeDate
+                      <span class="kw">ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW</span>)
+       <span class="kw">AS</span> RunningCount
+<span class="kw">FROM</span> Crime c <span class="kw">JOIN</span> Police_Station ps <span class="kw">ON</span> c.StationID = ps.StationID
+<span class="kw">ORDER BY</span> ps.District, c.CrimeDate;</div>
+    <div class="card"><div class="tbl-wrap"><table id="running-table"><tr><td class="loading">Loading...</td></tr></table></div></div>
+  </div>
+</div>
+
+<!-- SCHEMA -->
+<div class="page" id="page-schema">
+  <div class="page-header">
+    <div class="page-title">Relational Schema</div>
+    <div class="page-sub">9 tables normalised to 3NF — PK in gold, FK in purple</div>
+  </div>
+  <div class="schema-grid">
+    <div class="schema-card"><div class="schema-card-title">Police_Station</div>
+      <div class="schema-attr"><span class="pk">PK</span> StationID</div>
+      <div class="schema-attr">StationName, District</div>
+      <div class="schema-attr">JurisdictionZone, ContactNumber</div>
+    </div>
+    <div class="schema-card"><div class="schema-card-title">Officers</div>
+      <div class="schema-attr"><span class="pk">PK</span> OfficerID</div>
+      <div class="schema-attr"><span class="fk">FK</span> StationID</div>
+      <div class="schema-attr">Name, Designation, BadgeNumber</div>
+      <div class="schema-attr">DateOfJoining, Status</div>
+    </div>
+    <div class="schema-card"><div class="schema-card-title">Crime</div>
+      <div class="schema-attr"><span class="pk">PK</span> CrimeID</div>
+      <div class="schema-attr"><span class="fk">FK</span> StationID</div>
+      <div class="schema-attr">CrimeType, CrimeDate, Location</div>
+      <div class="schema-attr">Severity (CHECK), Status (CHECK)</div>
+    </div>
+    <div class="schema-card"><div class="schema-card-title">FIR</div>
+      <div class="schema-attr"><span class="pk">PK</span> FIRID</div>
+      <div class="schema-attr"><span class="fk">FK</span> CrimeID (UNIQUE — 1:1)</div>
+      <div class="schema-attr"><span class="fk">FK</span> FilingOfficerID</div>
+      <div class="schema-attr">FIRNumber (UNIQUE), FIRStatus</div>
+    </div>
+    <div class="schema-card"><div class="schema-card-title">Suspects</div>
+      <div class="schema-attr"><span class="pk">PK</span> SuspectID</div>
+      <div class="schema-attr">Name, NationalID (UNIQUE)</div>
+      <div class="schema-attr">PriorConvictions, RiskCategory</div>
+    </div>
+    <div class="schema-card"><div class="schema-card-title">Crime_Suspect</div>
+      <div class="schema-attr"><span class="pk">PK</span> (CrimeID, SuspectID)</div>
+      <div class="schema-attr"><span class="fk">FK</span> CrimeID, <span class="fk">FK</span> SuspectID</div>
+      <div class="schema-attr">RoleInCrime, ArrestDate</div>
+    </div>
+    <div class="schema-card"><div class="schema-card-title">Victims</div>
+      <div class="schema-attr"><span class="pk">PK</span> VictimID</div>
+      <div class="schema-attr"><span class="fk">FK</span> CrimeID</div>
+      <div class="schema-attr">Name, Age, InjurySeverity (CHECK)</div>
+    </div>
+    <div class="schema-card"><div class="schema-card-title">Witnesses</div>
+      <div class="schema-attr"><span class="pk">PK</span> WitnessID</div>
+      <div class="schema-attr"><span class="fk">FK</span> CrimeID</div>
+      <div class="schema-attr">Name, ProtectionStatus (Y/N)</div>
+    </div>
+    <div class="schema-card"><div class="schema-card-title">CaseFile</div>
+      <div class="schema-attr"><span class="pk">PK</span> CaseID</div>
+      <div class="schema-attr"><span class="fk">FK</span> FIRID (UNIQUE — 1:1)</div>
+      <div class="schema-attr"><span class="fk">FK</span> AssignedOfficerID</div>
+      <div class="schema-attr">CaseStatus, OpenDate, ClosureDate</div>
+    </div>
+  </div>
+  <div style="margin-top:16px" class="schema-card" style="grid-column:1/-1">
+    <div class="schema-card-title">CourtProceedings</div>
+    <div class="schema-attr"><span class="pk">PK</span> ProceedingID &nbsp;|&nbsp; <span class="fk">FK</span> CaseID &nbsp;|&nbsp; HearingDate, JudgeName, CourtName, Verdict, NextHearingDate</div>
+  </div>
+</div>
+
+</main>
+
+<script>
+const API = 'http://localhost:3000/api';
+
+async function get(url) {
+  try {
+    const r = await fetch(API + url);
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+async function post(url, body) {
+  try {
+    const r = await fetch(API + url, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    return await r.json();
+  } catch(e) { return {error: 'Server unreachable'} }
+}
+
+async function put(url, body) {
+  try {
+    const r = await fetch(API + url, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    return await r.json();
+  } catch(e) { return {error: 'Server unreachable'} }
+}
+
+function sevBadge(s) {
+  const m = {LOW:'b-green',MEDIUM:'b-orange',HIGH:'b-red',CRITICAL:'b-purple'};
+  return `<span class="badge ${m[s]||'b-gray'}">${s}</span>`;
+}
+function statusBadge(s) {
+  const m = {'Reported':'b-blue','Under Investigation':'b-orange','Solved':'b-green','Closed':'b-gray','Open':'b-blue','Charge-Sheeted':'b-blue','Trial':'b-orange','Investigation':'b-orange'};
+  return `<span class="badge ${m[s]||'b-gray'}">${s||'—'}</span>`;
+}
+function riskBadge(r) {
+  if (!r) return '';
+  if (r.includes('CRITICAL')) return `<span class="badge b-purple">${r}</span>`;
+  if (r.includes('HIGH')) return `<span class="badge b-red">${r}</span>`;
+  if (r.includes('MODERATE')) return `<span class="badge b-orange">${r}</span>`;
+  return `<span class="badge b-green">${r}</span>`;
+}
+
+function alert_(id, msg, type) {
+  const el = document.getElementById(id);
+  el.className = `alert alert-${type} show`;
+  el.textContent = msg;
+  setTimeout(() => el.classList.remove('show'), 5000);
+}
+
+// --- PAGE NAV ---
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  pageLoad[id] && pageLoad[id]();
+}
+
+function showTab(id, btn) {
+  document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  ['tab-rank','tab-listagg','tab-running'].forEach(t => {
+    document.getElementById(t).style.display = t===id ? 'block' : 'none';
+  });
+  tabLoad[id] && tabLoad[id]();
+}
+
+// --- DASHBOARD ---
+async function loadDashboard() {
+  const [crimes, officers, suspects, log] = await Promise.all([
+    get('/crimes'), get('/officers'), get('/suspects'), get('/auditlog')
+  ]);
+  if (!crimes) { document.getElementById('stats').innerHTML = '<div class="loading">⚠ Cannot connect to server at localhost:3000 — is Node running?</div>'; return; }
+
+  const active = crimes.filter(c => c.CRIMESTATUS === 'Under Investigation' || c.CRIMESTATUS === 'Reported').length;
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="stat-label">Total crimes</div><div class="stat-val blue">${crimes.length}</div></div>
+    <div class="stat"><div class="stat-label">Active investigations</div><div class="stat-val red">${active}</div></div>
+    <div class="stat"><div class="stat-label">Suspects on record</div><div class="stat-val purple">${suspects ? suspects.length : '—'}</div></div>
+    <div class="stat"><div class="stat-label">Audit log entries</div><div class="stat-val green">${log ? log.length : '—'}</div></div>`;
+
+  document.getElementById('dash-crimes').innerHTML = `<table>
+    <thead><tr><th>Crime type</th><th>Station</th><th>Severity</th><th>Status</th></tr></thead>
+    <tbody>${crimes.slice(0,5).map(c=>`<tr>
+      <td>${c.CRIMETYPE}</td>
+      <td style="color:var(--muted);font-size:12px">${c.STATIONNAME}</td>
+      <td>${sevBadge(c.SEVERITY)}</td>
+      <td>${statusBadge(c.CRIMESTATUS)}</td></tr>`).join('')}</tbody></table>`;
+
+  document.getElementById('dash-officers').innerHTML = officers ? officers.map(o=>{
+    const w = Math.min(o.ACTIVECASES * 30, 100);
+    return `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:13px">${o.OFFICERNAME}</span>
+        <span style="font-size:12px;color:var(--muted)">${o.ACTIVECASES} cases</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:5px">${o.DESIGNATION} · ${o.STATIONNAME}</div>
+      <div class="rank-bar-wrap"><div class="rank-bar" style="width:${w}%"></div></div></div>`;
+  }).join('') : '<div class="loading">No data</div>';
+}
+
+// --- CRIMES PAGE ---
+async function loadCrimes() {
+  const [stations, officers, crimes] = await Promise.all([get('/stations'), get('/officers'), get('/crimes')]);
+
+  // Populate dropdowns
+  const stSel = document.getElementById('f-station');
+  stSel.innerHTML = stations ? stations.map(s=>`<option value="${s.STATIONID}">${s.STATIONNAME}</option>`).join('') : '';
+  const offSel = document.getElementById('f-officer');
+  offSel.innerHTML = officers ? officers.map(o=>`<option value="${o.OFFICERID}">${o.OFFICERNAME} (${o.DESIGNATION})</option>`).join('') : '';
+
+  renderCrimeTable(crimes);
+}
+
+function renderCrimeTable(crimes) {
+  const t = document.getElementById('crime-table');
+  if (!crimes) { t.innerHTML = '<tr><td class="loading">No data</td></tr>'; return; }
+  t.innerHTML = `<thead><tr><th>ID</th><th>Type</th><th>Station</th><th>Location</th><th>Severity</th><th>Status</th><th>FIR No.</th></tr></thead>
+    <tbody>${crimes.map(c=>`<tr>
+      <td style="color:var(--muted)">#${c.CRIMEID}</td>
+      <td>${c.CRIMETYPE}</td>
+      <td style="font-size:12px;color:var(--muted)">${c.STATIONNAME}</td>
+      <td style="font-size:12px;max-width:180px">${c.LOCATION}</td>
+      <td>${sevBadge(c.SEVERITY)}</td>
+      <td>${statusBadge(c.CRIMESTATUS)}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${c.FIRNUMBER||'—'}</td></tr>`).join('')}</tbody>`;
+}
+
+async function registerCrime() {
+  const body = {
+    stationId: parseInt(document.getElementById('f-station').value),
+    crimeType: document.getElementById('f-ctype').value,
+    crimeDate: new Date().toISOString().split('T')[0],
+    location: document.getElementById('f-loc').value || 'Unknown',
+    severity: document.getElementById('f-sev').value,
+    complainantName: document.getElementById('f-comp').value || 'Anonymous',
+    officerId: parseInt(document.getElementById('f-officer').value),
+  };
+  const r = await post('/crimes', body);
+  if (r.error) { alert_('crime-alert', '❌ Oracle error: ' + r.error, 'error'); }
+  else {
+    alert_('crime-alert', `✅ Crime #${r.crimeId} registered. FIR auto-generated: ${r.firNumber}`, 'success');
+    const crimes = await get('/crimes');
+    renderCrimeTable(crimes);
+  }
+}
+
+async function testConstraint() {
+  const r = await post('/crimes', { stationId: 9999, crimeType: 'Test', crimeDate: '2025-01-01', location: 'Test', severity: 'LOW', complainantName: 'Test', officerId: 9999 });
+  alert_('crime-alert', '🔒 FK Constraint fired: ' + (r.error || 'Error'), 'error');
+}
+
+// --- SUSPECTS ---
+async function loadSuspects() {
+  const suspects = await get('/suspects');
+  const t = document.getElementById('suspect-table');
+  if (!suspects) { t.innerHTML = '<tr><td class="loading">No data</td></tr>'; return; }
+  t.innerHTML = `<thead><tr><th>ID</th><th>Name</th><th>NationalID</th><th>Convictions</th><th>Risk</th><th>Score</th></tr></thead>
+    <tbody>${suspects.map(s=>`<tr>
+      <td style="color:var(--muted)">#${s.SUSPECTID}</td>
+      <td>${s.NAME}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--muted)">${s.NATIONALID||'—'}</td>
+      <td>${s.PRIORCONVICTIONS}</td>
+      <td>${sevBadge(s.RISKCATEGORY||'LOW')}</td>
+      <td style="font-size:12px">${riskBadge(s.RECIDIVISMSCORE)}</td></tr>`).join('')}</tbody>`;
+
+  const sel = document.getElementById('susp-sel');
+  sel.innerHTML = suspects.map(s=>`<option value="${s.SUSPECTID}" data-score="${s.RECIDIVISMSCORE}">${s.NAME} (${s.PRIORCONVICTIONS} convictions)</option>`).join('');
+  showRisk();
+}
+
+function showRisk() {
+  const sel = document.getElementById('susp-sel');
+  const score = sel.selectedOptions[0]?.dataset.score || '';
+  let cls = 'risk-LOW';
+  if (score.includes('CRITICAL')) cls='risk-CRITICAL';
+  else if (score.includes('HIGH')) cls='risk-HIGH';
+  else if (score.includes('MODERATE')) cls='risk-MODERATE';
+  document.getElementById('risk-display').innerHTML = score
+    ? `<div class="risk-box ${cls}">${score}</div>`
+    : '';
+}
+
+async function addSuspect() {
+  const r = await post('/suspects', {
+    name: document.getElementById('s-name').value,
+    dob: null,
+    address: document.getElementById('s-addr').value,
+    nationalId: document.getElementById('s-nid').value,
+    priorConvictions: parseInt(document.getElementById('s-conv').value)||0,
+  });
+  if (r.error) alert_('susp-alert', '❌ Oracle error: ' + r.error, 'error');
+  else { alert_('susp-alert', '✅ Suspect inserted successfully', 'success'); loadSuspects(); }
+}
+
+// --- CASES ---
+async function loadCases() {
+  const cases = await get('/cases');
+  const t = document.getElementById('case-table');
+  if (!cases) { t.innerHTML = '<tr><td class="loading">No data</td></tr>'; return; }
+  t.innerHTML = `<thead><tr><th>Case ID</th><th>FIR Number</th><th>Crime</th><th>Severity</th><th>Status</th><th>Officer</th></tr></thead>
+    <tbody>${cases.map(c=>`<tr>
+      <td style="color:var(--muted)">#${c.CASEID}</td>
+      <td style="font-family:var(--mono);font-size:11px">${c.FIRNUMBER}</td>
+      <td>${c.CRIMETYPE}</td>
+      <td>${sevBadge(c.SEVERITY)}</td>
+      <td>${statusBadge(c.CASESTATUS)}</td>
+      <td>${c.OFFICERNAME||'<span style="color:var(--muted)">Unassigned</span>'}</td></tr>`).join('')}</tbody>`;
+}
+
+// --- INTELLIGENCE VIEW ---
+async function loadIntelligence() {
+  const crimes = await get('/crimes');
+  const t = document.getElementById('intel-table');
+  if (!crimes) { t.innerHTML = '<tr><td class="loading">No data</td></tr>'; return; }
+  t.innerHTML = `<thead><tr><th>Crime</th><th>Type</th><th>Station</th><th>Severity</th><th>FIR</th><th>Suspects</th><th>Victims</th><th>Witnesses</th></tr></thead>
+    <tbody>${crimes.map(c=>`<tr>
+      <td style="color:var(--muted)">#${c.CRIMEID}</td>
+      <td>${c.CRIMETYPE}</td>
+      <td style="font-size:12px;color:var(--muted)">${c.STATIONNAME}</td>
+      <td>${sevBadge(c.SEVERITY)}</td>
+      <td style="font-family:var(--mono);font-size:11px">${c.FIRNUMBER||'—'}</td>
+      <td style="text-align:center">${c.SUSPECTCOUNT}</td>
+      <td style="text-align:center">${c.VICTIMCOUNT}</td>
+      <td style="text-align:center">${c.WITNESSCOUNT}</td></tr>`).join('')}</tbody>`;
+}
+
+// --- WORKLOAD VIEW ---
+async function loadWorkload() {
+  const officers = await get('/officers');
+  const t = document.getElementById('workload-table');
+  if (!officers) { t.innerHTML = '<tr><td class="loading">No data</td></tr>'; return; }
+  t.innerHTML = `<thead><tr><th>Officer</th><th>Designation</th><th>Station</th><th>Active Cases</th><th>Load</th></tr></thead>
+    <tbody>${officers.map(o=>{
+      const w = Math.min(o.ACTIVECASES*30, 100);
+      const col = o.ACTIVECASES>=3?'var(--danger)':o.ACTIVECASES>=1?'var(--warning)':'var(--success)';
+      return `<tr>
+        <td>${o.OFFICERNAME}</td>
+        <td style="color:var(--muted)">${o.DESIGNATION}</td>
+        <td style="color:var(--muted);font-size:12px">${o.STATIONNAME}</td>
+        <td><strong style="color:${col}">${o.ACTIVECASES}</strong></td>
+        <td style="min-width:120px"><div class="rank-bar-wrap"><div class="rank-bar" style="width:${w}%;background:${col}"></div></div></td></tr>`;
+    }).join('')}</tbody>`;
+}
+
+// --- TRIGGER PAGE ---
+async function loadTriggerPage() {
+  const [cases, officers] = await Promise.all([get('/cases'), get('/officers')]);
+  const cSel = document.getElementById('a-case');
+  cSel.innerHTML = cases ? cases.map(c=>`<option value="${c.CASEID}">Case #${c.CASEID} — ${c.CRIMETYPE}</option>`).join('') : '';
+  const oSel = document.getElementById('a-officer2');
+  oSel.innerHTML = officers ? officers.map(o=>`<option value="${o.OFFICERID}">${o.OFFICERNAME}</option>`).join('') : '';
+  loadAuditLog();
+}
+
+async function loadAuditLog() {
+  const log = await get('/auditlog');
+  const el = document.getElementById('audit-log');
+  if (!log || log.length===0) { el.innerHTML = '<div class="loading">No entries yet</div>'; return; }
+  el.innerHTML = log.map(l=>`<div class="log-entry">
+    <div class="log-dot ${l.ACTIONTYPE==='ASSIGNED'?'assigned':'reassigned'}"></div>
+    <div class="log-info">
+      <div class="log-action" style="color:${l.ACTIONTYPE==='ASSIGNED'?'var(--success)':'var(--warning)'}">${l.ACTIONTYPE}</div>
+      <div class="log-detail">Case #${l.CASEID} → ${l.OFFICERNAME||'Officer #'+l.OFFICERID}</div>
+      <div class="log-detail">${new Date(l.ASSIGNEDAT).toLocaleString()}</div>
+    </div></div>`).join('');
+}
+
+async function assignOfficer() {
+  const caseId = document.getElementById('a-case').value;
+  const officerId = document.getElementById('a-officer2').value;
+  const r = await put(`/cases/${caseId}/assign`, { officerId: parseInt(officerId) });
+  if (r.error) alert_('assign-alert', '❌ Error: ' + r.error, 'error');
+  else {
+    alert_('assign-alert', '✅ Officer assigned — trigger fired, audit log updated', 'success');
+    loadAuditLog();
+  }
+}
+
+// --- ANALYTICS ---
+async function loadRank() {
+  const data = await get('/analytics/rank');
+  const el = document.getElementById('rank-result');
+  if (!data) { el.innerHTML = '<div class="loading">No data</div>'; return; }
+  const max = Math.max(...data.map(d=>d.TOTALCRIMES), 1);
+  el.innerHTML = `<table><thead><tr><th>Rank</th><th>Station</th><th>District</th><th>Crimes</th><th>Visual</th></tr></thead>
+    <tbody>${data.map(d=>`<tr>
+      <td><span class="badge b-blue">#${d.CRIMERANK}</span></td>
+      <td>${d.STATIONNAME}</td>
+      <td style="color:var(--muted)">${d.DISTRICT}</td>
+      <td><strong>${d.TOTALCRIMES}</strong></td>
+      <td style="min-width:140px"><div class="rank-bar-wrap"><div class="rank-bar" style="width:${Math.round(d.TOTALCRIMES/max*100)}%"></div></div></td></tr>`).join('')}</tbody></table>`;
+}
+
+async function loadListagg() {
+  const data = await get('/analytics/listagg');
+  const t = document.getElementById('listagg-table');
+  if (!data) { t.innerHTML = '<tr><td class="loading">No data</td></tr>'; return; }
+  t.innerHTML = `<thead><tr><th>Crime ID</th><th>Crime type</th><th>Suspects (LISTAGG result)</th></tr></thead>
+    <tbody>${data.map(d=>`<tr>
+      <td style="color:var(--muted)">#${d.CRIMEID}</td>
+      <td>${d.CRIMETYPE}</td>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--accent)">${d.SUSPECTNAMES}</td></tr>`).join('')}</tbody>`;
+}
+
+async function loadRunning() {
+  const data = await get('/analytics/running');
+  const t = document.getElementById('running-table');
+  if (!data) { t.innerHTML = '<tr><td class="loading">No data</td></tr>'; return; }
+  t.innerHTML = `<thead><tr><th>District</th><th>Date</th><th>Crime type</th><th>Running count</th></tr></thead>
+    <tbody>${data.map(d=>`<tr>
+      <td style="color:var(--muted)">${d.DISTRICT}</td>
+      <td style="font-family:var(--mono);font-size:12px">${d.CRIMEDATE}</td>
+      <td>${d.CRIMETYPE}</td>
+      <td><span class="badge b-blue">${d.RUNNINGCOUNT}</span></td></tr>`).join('')}</tbody>`;
+}
+
+const tabLoad = { 'tab-rank': loadRank, 'tab-listagg': loadListagg, 'tab-running': loadRunning };
+
+const pageLoad = {
+  dashboard: loadDashboard,
+  crimes: loadCrimes,
+  suspects: loadSuspects,
+  cases: loadCases,
+  intelligence: loadIntelligence,
+  workload: loadWorkload,
+  trigger: loadTriggerPage,
+  analytics: loadRank,
+};
+
+// Init
+loadDashboard();
+</script>
+</body>
+</html>
